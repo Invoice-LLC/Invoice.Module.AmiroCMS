@@ -4,6 +4,8 @@ require "InvoiceSDK/common/SETTINGS.php";
 require "InvoiceSDK/common/ORDER.php";
 require "InvoiceSDK/CREATE_TERMINAL.php";
 require "InvoiceSDK/CREATE_PAYMENT.php";
+require "InvoiceSDK/GET_TERMINAL.php";
+
 
 class Invoice_PaymentSystemDriver extends AMI_PaymentSystemDriver
 {
@@ -17,11 +19,13 @@ class Invoice_PaymentSystemDriver extends AMI_PaymentSystemDriver
      * @param  bool   $bAutoRedirect  If form autosubmit required (directly from checkout page)
      * @return bool  TRUE if form is generated, FALSE otherwise
      */
-    public function getPayButton(array &$aRes, array $aData, $bAutoRedirect = false){
+    public function getPayButton(array &$aRes, array $aData, $bAutoRedirect = false)
+    {
+
         $this->log("getPayButton");
-        $res =true;
+        $res = true;
         $aTemplateData = array(); // "return" => $this->classFunctionality->parameters["DEFAULT_RETURN_ADDRESS"]);
-        if(is_array($aData)){
+        if (is_array($aData)) {
             $aTemplateData = array_merge($aTemplateData, $aData);
         }
         $aRes['error'] = 'Success';
@@ -29,21 +33,19 @@ class Invoice_PaymentSystemDriver extends AMI_PaymentSystemDriver
 
         $data = $aData;
 
-        foreach(Array("return", "cancel", "description", "button_name", "payment_url") as $fldName){
+        foreach (array("return", "cancel", "description", "button_name", "payment_url") as $fldName) {
             $data[$fldName] = htmlspecialchars($data[$fldName]);
         }
 
-        foreach($data as $key => $value){
+        foreach ($data as $key => $value) {
             $aData["hiddens"] .= "<input type=\"hidden\" name=\"$key\" value=\"$value\">\r\n";
         }
         $aData["button"] = trim($aData["button"]);
-        if(!empty($aData["button"]))
-        {
-            $aData["_button_html"] =1;
+        if (!empty($aData["button"])) {
+            $aData["_button_html"] = 1;
         }
-        if(!$res)
-        {
-            $aData["disabled"] ="disabled";
+        if (!$res) {
+            $aData["disabled"] = "disabled";
         }
 
         try {
@@ -52,7 +54,7 @@ class Invoice_PaymentSystemDriver extends AMI_PaymentSystemDriver
         } catch (Exception $e) {
             $aRes["errno"] = 1;
             $aRes["error"] = $e->getMessage();
-            $res =false;
+            $res = false;
         }
 
 
@@ -67,17 +69,18 @@ class Invoice_PaymentSystemDriver extends AMI_PaymentSystemDriver
      * @return bool  TRUE if form is generated, FALSE otherwise
      * @throws Exception
      */
-    public function getPayButtonParams(array $aData, array &$aRes){
+    public function getPayButtonParams(array $aData, array &$aRes)
+    {
         $this->log("getPayButtonParams");
         $aTemplateData = $aData;
         $aRes["error"] = "Success";
         $aRes["errno"] = 0;
 
-        if(empty($aTemplateData["merchant_id"])){
+        if (empty($aTemplateData["merchant_id"])) {
             $aRes["errno"] = 1;
             $aRes["error"] = "merchant purse is missed";
             return false;
-        }else if(empty($aTemplateData["amount"])){
+        } else if (empty($aTemplateData["amount"])) {
             $aRes["errno"] = 3;
             $aRes["error"] = "amount is missed";
             return false;
@@ -87,9 +90,9 @@ class Invoice_PaymentSystemDriver extends AMI_PaymentSystemDriver
 
         $aTemplateData['signatureValue'] = md5(
             $aData['merchant_id'] . ':' .
-            $aData['amount']  . ':' .
-            $aData['order_id']  . ':' .
-            $aData['password1']  . ':shpitem_number=' . $aData['order_id']
+                $aData['amount']  . ':' .
+                $aData['order_id']  . ':' .
+                $aData['password1']  . ':shpitem_number=' . $aData['order_id']
         );
 
 
@@ -107,16 +110,17 @@ class Invoice_PaymentSystemDriver extends AMI_PaymentSystemDriver
      * @param  array $aOrderData  Order data that contains such fields as id, total, order_date, status
      * @return bool  TRUE if order is correct, FALSE otherwise
      */
-    public function payProcess(array $aGet, array $aPost, array &$aRes, array $aCheckData, array $aOrderData){
+    public function payProcess(array $aGet, array $aPost, array &$aRes, array $aCheckData, array $aOrderData)
+    {
         $this->log("payProcess");
-        $status ='fail';
-        if(!@is_array($aGet))
-            $aGet =Array();
-        if(!@is_array($aPost))
-            $aPost =Array();
-        $aParams =array_merge($aGet, $aPost);
-        if(!empty($aParams['status']))
-            $status =$aParams['status'];
+        $status = 'fail';
+        if (!@is_array($aGet))
+            $aGet = array();
+        if (!@is_array($aPost))
+            $aPost = array();
+        $aParams = array_merge($aGet, $aPost);
+        if (!empty($aParams['status']))
+            $status = $aParams['status'];
 
         return ($status == "ok");
     }
@@ -131,7 +135,8 @@ class Invoice_PaymentSystemDriver extends AMI_PaymentSystemDriver
      * @param  array $aOrderData  Order data that contains such fields as id, total, order_date, status
      * @return int  -1 - ignore post, 0 - reject(cancel) order, 1 - confirm order
      */
-    public function payCallback(array $aGet, array $aPost, array &$aRes, array $aCheckData, array $aOrderData){
+    public function payCallback(array $aGet, array $aPost, array &$aRes, array $aCheckData, array $aOrderData)
+    {
         $this->log("payCallback");
 
         $this->log("getProcessOrder");
@@ -144,17 +149,17 @@ class Invoice_PaymentSystemDriver extends AMI_PaymentSystemDriver
 
         $signature = $notification["signature"];
 
-        if($signature != $this->getSignature($notification["id"], $notification["status"], $aCheckData['api_key'])) {
+        if ($signature != $this->getSignature($notification["id"], $notification["status"], $aCheckData['api_key'])) {
             $this->log("Wrong signature");
             return 0;
         }
 
-        if($type == "pay") {
+        if ($type == "pay") {
 
-            if($notification["status"] == "successful") {
+            if ($notification["status"] == "successful") {
                 return 1;
             }
-            if($notification["status"] == "error") {
+            if ($notification["status"] == "error") {
                 return 0;
             }
         }
@@ -172,7 +177,8 @@ class Invoice_PaymentSystemDriver extends AMI_PaymentSystemDriver
      * @param  array $aAdditionalParams  Reserved array
      * @return int  Order Id
      */
-    public function getProcessOrder(array $aGet, array $aPost, array &$aRes, array $aAdditionalParams){
+    public function getProcessOrder(array $aGet, array $aPost, array &$aRes, array $aAdditionalParams)
+    {
         return parent::getProcessOrder($aGet, $aPost, $aRes, $aAdditionalParams);
     }
 
@@ -182,72 +188,101 @@ class Invoice_PaymentSystemDriver extends AMI_PaymentSystemDriver
      * @param  int $orderId  Id of order in the system will be passed to this function
      * @return void
      */
-    public function onPaymentConfirmed($orderId){
+    public function onPaymentConfirmed($orderId)
+    {
         header('Status: 200 OK');
         header('HTTP/1.0 200 OK');
         echo 'OK', $orderId;
         exit;
     }
 
-    public function createTerminal($aData) {
-        $request = new CREATE_TERMINAL("AmiroCMS Terminal");
+    public function createTerminal($aData)
+    {
+        $request = new CREATE_TERMINAL();
+        $request->name = "AmiroCMS";
+        $request->description = "AmiroCMS Terminal";
+        $request->defaultPrice = 10;
+        $request->type = "dynamical";
+
         $this->log(json_encode($request));
+
         $response = $this->getRestClient($aData)->CreateTerminal($request);
         $this->log(json_encode($response));
-        if($response == null) throw new Exception("Ошибка при создании терминала");
-        if(isset($response->error)) throw new Exception("Ошибка при создании терминала(".$response->description.")");
+
+        if ($response == null) throw new Exception("Ошибка при создании терминала");
+        if (isset($response->error)) throw new Exception("Ошибка при создании терминала(" . $response->description . ")");
 
         $this->saveTerminal($response->id);
         return $response->id;
     }
 
-    public function checkOrCreateTerminal($aData) {
+    public function checkOrCreateTerminal($aData)
+    {
         $tid = $this->getTerminal();
 
-        if($tid == null or empty($tid)) {
+        $terminal = new GET_TERMINAL();
+        $terminal->alias =  $tid;
+        $info = $this->getRestClient($aData)->GetTerminal($terminal);
+
+        if ($tid == null or empty($tid) || $info->id == null || $info->id != $terminal->alias) {
             $tid = $this->createTerminal($aData);
         }
 
         return $tid;
     }
 
-    public function createPayment($aData, $amount, $id) {
-        $order = new INVOICE_ORDER($amount);
-        $order->id = $id;
+    public function createPayment($aData, $amount, $id)
+    {
+        $this->log("createPayment");
+        $order = new INVOICE_ORDER();
+        $order->id = "$id" . "-" . bin2hex($id);
+        $order->amount = $amount;
 
-        $settings = new SETTINGS($this->checkOrCreateTerminal($aData));
-        $settings->success_url = ( ((!empty($_SERVER['HTTPS'])) ? 'https' : 'http') . '://' . $_SERVER['HTTP_HOST']);
+        $url = (((!empty($_SERVER['HTTPS'])) ? 'https' : 'http') . '://' . $_SERVER['HTTP_HOST']);
+        $settings = new SETTINGS();
+        $settings->terminal_id = $this->checkOrCreateTerminal($aData);
+        $settings->fail_url = $url;
+        $settings->success_url = $url;
 
-        $request = new CREATE_PAYMENT($order, $settings, array());
+        $receipt = array();
+
+        $request = new CREATE_PAYMENT($order, $settings, $receipt);
+
         $response = $this->getRestClient($aData)->CreatePayment($request);
 
-        if($response == null) throw new Exception("Ошибка при создании платежа");
-        if(isset($response->error)) throw new Exception("Ошибка при создании платежа(".$response->description.")");
+        if ($response == null) throw new Exception("Ошибка при создании платежа");
+        if (isset($response->error)) throw new Exception("Ошибка при создании платежа(" . $response->description . ")");
+        $this->log($response);
 
         return $response->payment_url;
     }
 
-    public function getRestClient($aData) {
+    public function getRestClient($aData)
+    {
         return new RestClient($aData['login'], $aData['api_key']);
     }
 
-    public function saveTerminal($id) {
+    public function saveTerminal($id)
+    {
         file_put_contents("invoice_tid", $id);
     }
 
-    public function getTerminal() {
-        if(!file_exists("invoice_tid")) return "";
+    public function getTerminal()
+    {
+        if (!file_exists("invoice_tid")) return "";
         return file_get_contents("invoice_tid");
     }
 
-    public function log($content){
+    public function log($content)
+    {
         $file = 'invoice_log';
         $doc = fopen($file, 'a');
         file_put_contents($file, PHP_EOL . $content, FILE_APPEND);
         fclose($doc);
     }
 
-    public function getSignature($id, $status, $key) {
-        return md5($id.$status.$key);
+    public function getSignature($id, $status, $key)
+    {
+        return md5($id . $status . $key);
     }
 }
