@@ -6,11 +6,9 @@ require "InvoiceSDK/CREATE_TERMINAL.php";
 require "InvoiceSDK/CREATE_PAYMENT.php";
 require "InvoiceSDK/GET_TERMINAL.php";
 
-
 class Invoice_PaymentSystemDriver extends AMI_PaymentSystemDriver
 {
     protected $driverName = 'Invoice';
-
     /**
      * Get checkout button HTML form.
      *
@@ -21,13 +19,14 @@ class Invoice_PaymentSystemDriver extends AMI_PaymentSystemDriver
      */
     public function getPayButton(array &$aRes, array $aData, $bAutoRedirect = false)
     {
-
         $this->log("getPayButton");
         $res = true;
         $aTemplateData = array(); // "return" => $this->classFunctionality->parameters["DEFAULT_RETURN_ADDRESS"]);
+
         if (is_array($aData)) {
             $aTemplateData = array_merge($aTemplateData, $aData);
         }
+
         $aRes['error'] = 'Success';
         $aRes['errno'] = 0;
 
@@ -57,7 +56,6 @@ class Invoice_PaymentSystemDriver extends AMI_PaymentSystemDriver
             $res = false;
         }
 
-
         return parent::getPayButton($aRes, $aTemplateData, $bAutoRedirect);
     }
 
@@ -72,6 +70,7 @@ class Invoice_PaymentSystemDriver extends AMI_PaymentSystemDriver
     public function getPayButtonParams(array $aData, array &$aRes)
     {
         $this->log("getPayButtonParams");
+
         $aTemplateData = $aData;
         $aRes["error"] = "Success";
         $aRes["errno"] = 0;
@@ -86,16 +85,12 @@ class Invoice_PaymentSystemDriver extends AMI_PaymentSystemDriver
             return false;
         }
 
-
-
         $aTemplateData['signatureValue'] = md5(
             $aData['merchant_id'] . ':' .
                 $aData['amount']  . ':' .
                 $aData['order_id']  . ':' .
                 $aData['password1']  . ':shpitem_number=' . $aData['order_id']
         );
-
-
 
         return parent::getPayButtonParams($aTemplateData, $aRes);
     }
@@ -198,6 +193,8 @@ class Invoice_PaymentSystemDriver extends AMI_PaymentSystemDriver
 
     public function createTerminal($aData)
     {
+        $this->log("Create Terminal");
+
         $request = new CREATE_TERMINAL();
         $request->name = "AmiroCMS";
         $request->description = "AmiroCMS Terminal";
