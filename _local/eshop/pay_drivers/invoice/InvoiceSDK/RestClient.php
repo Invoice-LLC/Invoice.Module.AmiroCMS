@@ -34,10 +34,10 @@ class RestClient
         curl_setopt($ch, CURLOPT_POSTFIELDS, $json);
 
         curl_setopt($ch, CURLOPT_HTTPHEADER, array(
-            "Host: pay.invoice.su",
+            "Host: api.invoice.su",
             "content-type: application/json",
             "Authorization: Basic ".$auth,
-            "User-Agent: curl/7.55.1",
+            "User-Agent: Invoice.AmiroCMS",
             "Accept: */*"
         ));
 
